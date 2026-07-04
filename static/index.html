@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>赢典AI · 同一事实，多维赢解</title>
+<style>
+  :root {
+    --gold: #d4a017;
+    --gold-light: #f0c75e;
+    --deep-blue: #0b1f3a;
+    --deep-blue-2: #12294d;
+    --white: #f7f7f5;
+    --green: #2e9e5b;
+    --orange: #e08a1e;
+    --red: #d64545;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--deep-blue);
+    color: var(--white);
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+  }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px; background: var(--deep-blue-2);
+    border-bottom: 1px solid rgba(212,160,23,.3);
+  }
+  .logo { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; }
+  .seal {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 2px solid var(--gold); color: var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 900;
+  }
+  .slogan { font-size: 12px; color: rgba(247,247,245,.55); margin-left: 8px; font-weight: 400; }
+  .wallet { display: flex; align-items: center; gap: 12px; font-size: 14px; }
+  .coin-chip {
+    background: rgba(212,160,23,.15); border: 1px solid var(--gold);
+    color: var(--gold-light); border-radius: 20px; padding: 4px 14px; cursor: pointer;
+  }
+  .btn-link { background: none; border: none; color: rgba(247,247,245,.7); cursor: pointer; font-size: 13px; text-decoration: underline; }
+
+  main { flex: 1; max-width: 860px; width: 100%; margin: 0 auto; padding: 20px 16px 120px; }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .tab {
+    padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 14px;
+    border: 1px solid rgba(247,247,245,.25); color: rgba(247,247,245,.8); background: none;
+  }
+  .tab.active { background: var(--gold); color: var(--deep-blue); border-color: var(--gold); font-weight: 700; }
+
+  .options { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .options select {
+    background: var(--deep-blue-2); color: var(--white);
+    border: 1px solid rgba(212,160,23,.4); border-radius: 8px; padding: 6px 10px; font-size: 13px;
+  }
+  .options label { font-size: 13px; color: rgba(247,247,245,.6); align-self: center; }
+
+  /* 聊天区 */
+  #chat { display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px; }
+  .msg { max-width: 92%; padding: 12px 16px; border-radius: 12px; line-height: 1.7; font-size: 15px; white-space: pre-wrap; word-break: break-word; }
+  .msg.user { align-self: flex-end; background: rgba(212,160,23,.18); border: 1px solid rgba(212,160,23,.35); }
+  .msg.bot { align-self: flex-start; background: var(--deep-blue-2); border: 1px solid rgba(247,247,245,.1); position: relative; }
+  .msg.bot table { border-collapse: collapse; margin: 8px 0; }
+  .msg.bot td, .msg.bot th { border: 1px solid rgba(247,247,245,.25); padding: 4px 8px; font-size: 13px; }
+  .msg-tools { margin-top: 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .copy-btn {
+    background: none; border: 1px solid var(--gold); color: var(--gold-light);
+    border-radius: 6px; padding: 3px 12px; font-size: 12px; cursor: pointer;
+  }
+  .comp { font-size: 12px; padding: 3px 10px; border-radius: 6px; }
+  .comp.pass { color: var(--green); border: 1px solid var(--green); }
+  .comp.caution { color: var(--orange); border: 1px solid var(--orange); }
+  .comp.block { color: var(--red); border: 1px solid var(--red); }
+
+  /* 典典加载动画 */
+  .loading { display: flex; align-items: center; gap: 12px; color: rgba(247,247,245,.7); font-size: 14px; }
+  .dian { font-size: 26px; animation: bob 1s ease-in-out infinite; }
+  @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+
+  /* 实时时事面板 */
+  .trend-item {
+    background: var(--deep-blue-2); border: 1px solid rgba(247,247,245,.1);
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 10px;
+    display: flex; justify-content: space-between; gap: 12px; align-items: center;
+  }
+  .trend-item .t { font-size: 14px; line-height: 1.5; }
+  .trend-item .s { font-size: 12px; color: rgba(247,247,245,.45); margin-top: 4px; }
+  .trend-item button {
+    flex-shrink: 0; background: var(--gold); color: var(--deep-blue); border: none;
+    border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer; font-weight: 700;
+  }
+
+  /* 输入区（跳动赢字光标） */
+  .composer {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--deep-blue-2); border-top: 1px solid rgba(212,160,23,.3);
+    padding: 12px 16px 8px;
+  }
+  .composer-inner { max-width: 860px; margin: 0 auto; }
+  .input-row { display: flex; gap: 10px; align-items: flex-end; }
+  .win-cursor {
+    color: var(--gold); font-weight: 900; font-size: 18px;
+    animation: winpulse 1.2s ease-in-out infinite;
+  }
+  .win-cursor.fast { animation-duration: .35s; }
+  @keyframes winpulse { 0%,100%{transform:scale(1);opacity:.7} 50%{transform:scale(1.3);opacity:1} }
+  textarea {
+    flex: 1; resize: none; min-height: 46px; max-height: 140px;
+    background: var(--deep-blue); color: var(--white);
+    border: 1px solid rgba(212,160,23,.4); border-radius: 10px;
+    padding: 12px 14px; font-size: 15px; line-height: 1.5; outline: none;
+    caret-color: var(--gold);
+  }
+  textarea:focus { border-color: var(--gold); }
+  #send {
+    background: var(--gold); color: var(--deep-blue); font-weight: 700;
+    border: none; border-radius: 10px; padding: 12px 22px; font-size: 15px; cursor: pointer;
+  }
+  #send:disabled { opacity: .5; cursor: not-allowed; }
+  .disclaimer { font-size: 11px; color: rgba(247,247,245,.35); text-align: center; margin-top: 6px; }
+
+  /* 金色盖章特效 */
+  #stamp {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(3); opacity: 0;
+    width: 120px; height: 120px; border-radius: 50%;
+    border: 5px solid var(--gold); color: var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 64px; font-weight: 900; pointer-events: none; z-index: 99;
+    background: rgba(11,31,58,.7);
+  }
+  #stamp.go { animation: stamp .8s ease-out forwards; }
+  @keyframes stamp {
+    0% { opacity: 0; transform: translate(-50%,-50%) scale(3) rotate(-20deg); }
+    60% { opacity: 1; transform: translate(-50%,-50%) scale(1) rotate(-8deg); }
+    100% { opacity: 0; transform: translate(-50%,-50%) scale(1) rotate(-8deg); }
+  }
+
+  /* 弹窗 */
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; z-index: 50; }
+  .modal-bg.show { display: flex; }
+  .modal {
+    background: var(--deep-blue-2); border: 1px solid var(--gold); border-radius: 14px;
+    padding: 24px; width: 90%; max-width: 420px; max-height: 70vh; overflow-y: auto;
+  }
+  .modal h3 { color: var(--gold-light); margin-bottom: 14px; }
+  .plan { border: 1px solid rgba(212,160,23,.4); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; }
+  .plan:hover { border-color: var(--gold); background: rgba(212,160,23,.08); }
+  .ledger-row { font-size: 13px; display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed rgba(247,247,245,.12); }
+  .close-x { float: right; cursor: pointer; color: rgba(247,247,245,.6); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="seal">赢</div>
+    赢典AI
+    <span class="slogan">同一事实，多维赢解 · 全球视野，立于不败</span>
+  </div>
+  <div class="wallet">
+    <span class="coin-chip" id="coins" onclick="openRecharge()">赢币 --</span>
+    <button class="btn-link" onclick="openBilling()">账单</button>
+  </div>
+</header>
+
+<main>
+  <div class="tabs">
+    <button class="tab active" data-mode="chat">💬 自由对话</button>
+    <button class="tab" data-mode="copywriting">✍️ 写文案</button>
+    <button class="tab" data-mode="comment">🔥 辣评锐评</button>
+    <button class="tab" data-mode="analysis">📊 赢面分析</button>
+    <button class="tab" data-mode="trending">🌏 实时时事赢面</button>
+  </div>
+
+  <div class="options" id="opt-copywriting" style="display:none">
+    <label>风格</label>
+    <select id="style">
+      <option value="official">官方严谨</option>
+      <option value="rational" selected>理性客观</option>
+      <option value="sharp">犀利锐评</option>
+      <option value="witty">抖机灵</option>
+    </select>
+    <label>平台</label>
+    <select id="platform">
+      <option value="general" selected>通用</option>
+      <option value="weibo">微博</option>
+      <option value="xiaohongshu">小红书</option>
+      <option value="zhihu">知乎</option>
+      <option value="douyin">抖音</option>
+    </select>
+  </div>
+
+  <div class="options" id="opt-comment" style="display:none">
+    <label>强度</label>
+    <select id="intensity">
+      <option value="calm">理性克制</option>
+      <option value="objective" selected>犀利客观</option>
+      <option value="humorous">幽默抖机灵</option>
+      <option value="firm">立场鲜明</option>
+    </select>
+  </div>
+
+  <div id="trend-panel" style="display:none">
+    <p style="font-size:13px;color:rgba(247,247,245,.5);margin-bottom:10px">
+      🌏 海外实时热点（Twitter/Reddit/YouTube 信源 · V1.0 内测版接入 Reddit 公开源）· 领先信息差 24-72 小时
+    </p>
+    <div id="trend-list"><div class="loading"><span class="dian">🧐</span>抓取海外信源中…</div></div>
+  </div>
+
+  <div id="chat"></div>
+</main>
+
+<div class="composer">
+  <div class="composer-inner">
+    <div class="input-row">
+      <span class="win-cursor" id="wc">赢</span>
+      <textarea id="input" placeholder="输入热点、观点、素材……典典为你多维研判"></textarea>
+      <button id="send">研判</button>
+    </div>
+    <div class="disclaimer">⚖️ 本工具仅提供文案研判辅助，生成内容的发布与使用由用户自行负责 · alpha 内测版</div>
+  </div>
+</div>
+
+<div id="stamp">赢</div>
+
+<div class="modal-bg" id="recharge-modal">
+  <div class="modal">
+    <span class="close-x" onclick="closeModals()">✕</span>
+    <h3>💰 赢币充值（内测模拟）</h3>
+    <div class="plan" onclick="doRecharge('pack50')"><span>50 赢币</span><b>¥9.9</b></div>
+    <div class="plan" onclick="doRecharge('monthly')"><span>月度无限赢币会员</span><b>¥19.9</b></div>
+    <p style="font-size:12px;color:rgba(247,247,245,.4)">新用户赠 10 赢币，每日登录赠 3 赢币。内测版为模拟到账，不产生真实扣款。</p>
+  </div>
+</div>
+
+<div class="modal-bg" id="billing-modal">
+  <div class="modal">
+    <span class="close-x" onclick="closeModals()">✕</span>
+    <h3>📒 账单中心</h3>
+    <div id="ledger"></div>
+  </div>
+</div>
+
+<script>
+const WATERMARK = "\n\n—— 本文由赢典AI多维研判生成 ——";
+const LOADING_TEXTS = ["抓取海内外信源", "匹配权威史实", "测算多维赢面", "合规校验筛查"];
+
+let mode = "chat";
+let histories = { chat: [], copywriting: [], comment: [], analysis: [], trending: [] };
+let generating = false;
+
+const $ = id => document.getElementById(id);
+const chatEl = $("chat"), inputEl = $("input"), sendEl = $("send"), wc = $("wc");
+
+// ---------- 用户 / 赢币 ----------
+async function refreshMe() {
+  const r = await fetch("/api/me");
+  renderUser(await r.json());
+}
+function renderUser(u) {
+  $("coins").textContent = u.is_member ? `会员 · 至${u.member_until}` : `赢币 ${u.coins}`;
+}
+refreshMe();
+
+// ---------- Tab 切换 ----------
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+  document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+  t.classList.add("active");
+  mode = t.dataset.mode;
+  $("opt-copywriting").style.display = mode === "copywriting" ? "flex" : "none";
+  $("opt-comment").style.display = mode === "comment" ? "flex" : "none";
+  $("trend-panel").style.display = mode === "trending" ? "block" : "none";
+  if (mode === "trending") loadTrending();
+  renderHistory();
+  inputEl.placeholder = {
+    chat: "输入热点、观点、素材……典典为你多维研判",
+    copywriting: "输入文案主题或素材，一键生成全平台文案",
+    comment: "粘贴对方观点或事件，生成高赞辣评",
+    analysis: "粘贴文章 / 观点 / 话题，生成赢面研判报告",
+    trending: "从上方热点一键研判，或自行输入时事话题"
+  }[mode];
+});
+
+function renderHistory() {
+  chatEl.innerHTML = "";
+  for (const m of histories[mode]) {
+    appendMsg(m.role === "user" ? "user" : "bot", m.content, m.compliance);
+  }
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+function appendMsg(cls, text, comp) {
+  const div = document.createElement("div");
+  div.className = "msg " + cls;
+  div.textContent = text;
+  if (cls === "bot" && text) addTools(div, text, comp);
+  chatEl.appendChild(div);
+  return div;
+}
+
+function addTools(div, text, comp) {
+  const tools = document.createElement("div");
+  tools.className = "msg-tools";
+  const btn = document.createElement("button");
+  btn.className = "copy-btn";
+  btn.textContent = "📋 复制（带落款）";
+  btn.onclick = () => {
+    navigator.clipboard.writeText(text + WATERMARK);
+    btn.textContent = "✅ 已复制";
+    setTimeout(() => btn.textContent = "📋 复制（带落款）", 1500);
+  };
+  tools.appendChild(btn);
+  if (comp) {
+    const c = document.createElement("span");
+    c.className = "comp " + comp.level;
+    c.textContent = comp.level === "pass" ? "✅ 合规可发，立论稳妥"
+      : comp.level === "caution" ? "⚠️ 轻微风险：" + (comp.suggestion || (comp.issues||[]).join("；"))
+      : "⛔ 高危拦截：" + (comp.issues || []).join("；");
+    tools.appendChild(c);
+  }
+  div.appendChild(tools);
+}
+
+// ---------- 生成 ----------
+sendEl.onclick = generate;
+inputEl.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); generate(); }
+});
+inputEl.addEventListener("input", () => { wc.classList.add("fast"); clearTimeout(wc._t); wc._t = setTimeout(() => !generating && wc.classList.remove("fast"), 600); });
+
+async function generate(presetText) {
+  if (generating) return;
+  const text = (typeof presetText === "string" ? presetText : inputEl.value).trim();
+  if (!text) return;
+  inputEl.value = "";
+  generating = true; sendEl.disabled = true; wc.classList.add("fast");
+
+  histories[mode].push({ role: "user", content: text });
+  appendMsg("user", text);
+
+  // 典典加载动画
+  const load = document.createElement("div");
+  load.className = "msg bot";
+  load.innerHTML = `<div class="loading"><span class="dian">🤓📜</span><span id="ltext">${LOADING_TEXTS[0]}…</span></div>`;
+  chatEl.appendChild(load);
+  let li = 0;
+  const loadTimer = setInterval(() => {
+    li = (li + 1) % LOADING_TEXTS.length;
+    const lt = load.querySelector("#ltext");
+    if (lt) lt.textContent = LOADING_TEXTS[li] + "…";
+  }, 1600);
+  window.scrollTo(0, document.body.scrollHeight);
+
+  const payload = {
+    mode,
+    messages: histories[mode].map(m => ({ role: m.role, content: m.content })),
+    style: $("style").value,
+    platform: $("platform").value,
+    intensity: $("intensity").value,
+  };
+
+  let botDiv = null, full = "", compliance = null;
+  try {
+    const resp = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!resp.ok) {
+      const err = await resp.json();
+      clearInterval(loadTimer); load.remove();
+      if (resp.status === 402) {
+        appendMsg("bot", "🪙 " + err.error + "。点击右上角补充赢力～");
+        openRecharge();
+      } else {
+        appendMsg("bot", "⛔ " + (err.error || "请求失败"));
+      }
+      histories[mode].pop();
+      return;
+    }
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const parts = buf.split("\n\n");
+      buf = parts.pop();
+      for (const p of parts) {
+        if (!p.startsWith("data: ")) continue;
+        const ev = JSON.parse(p.slice(6));
+        if (ev.type === "delta") {
+          if (!botDiv) { clearInterval(loadTimer); load.remove(); botDiv = appendMsg("bot", ""); }
+          full += ev.text;
+          botDiv.textContent = full;
+          window.scrollTo(0, document.body.scrollHeight);
+        } else if (ev.type === "done") {
+          compliance = ev.compliance;
+          if (ev.user) renderUser(ev.user);
+        } else if (ev.type === "error") {
+          clearInterval(loadTimer); load.remove();
+          if (!botDiv) botDiv = appendMsg("bot", "");
+          botDiv.textContent = (full || "") + "\n⛔ " + ev.error;
+        }
+      }
+    }
+  } catch (e) {
+    clearInterval(loadTimer); load.remove();
+    appendMsg("bot", "⛔ 网络异常：" + e.message);
+  } finally {
+    clearInterval(loadTimer);
+    if (load.parentNode) load.remove();
+    generating = false; sendEl.disabled = false; wc.classList.remove("fast");
+  }
+
+  if (botDiv && full) {
+    addTools(botDiv, full, compliance);
+    histories[mode].push({ role: "assistant", content: full, compliance });
+    stamp(); // 金色盖章特效
+  }
+}
+
+function stamp() {
+  const s = $("stamp");
+  s.classList.remove("go");
+  void s.offsetWidth;
+  s.classList.add("go");
+}
+
+// ---------- 实时时事 ----------
+async function loadTrending() {
+  const list = $("trend-list");
+  try {
+    const r = await fetch("/api/trending");
+    const { items } = await r.json();
+    if (!items.length) { list.innerHTML = '<p style="font-size:13px;color:rgba(247,247,245,.5)">暂时无法获取海外热点（网络受限），可直接在下方输入时事话题研判。</p>'; return; }
+    list.innerHTML = "";
+    for (const it of items) {
+      const div = document.createElement("div");
+      div.className = "trend-item";
+      div.innerHTML = `<div><div class="t">${it.title}</div><div class="s">${it.source} · 热度 ${it.score}</div></div>`;
+      const btn = document.createElement("button");
+      btn.textContent = "一键赢面";
+      btn.onclick = () => generate(`海外热点：${it.title}（来源：${it.source}）。请做时事赢面研判并生成首发卡位文案。`);
+      div.appendChild(btn);
+      list.appendChild(div);
+    }
+  } catch {
+    list.innerHTML = '<p style="font-size:13px;color:rgba(247,247,245,.5)">热点抓取失败，可直接输入话题研判。</p>';
+  }
+}
+
+// ---------- 充值 / 账单 ----------
+function openRecharge() { $("recharge-modal").classList.add("show"); }
+async function doRecharge(plan) {
+  const r = await fetch("/api/recharge", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ plan }) });
+  const d = await r.json();
+  if (d.ok) { renderUser(d.user); closeModals(); stamp(); }
+}
+async function openBilling() {
+  const r = await fetch("/api/billing");
+  const { records } = await r.json();
+  $("ledger").innerHTML = records.length
+    ? records.map(x => `<div class="ledger-row"><span>${x.reason}</span><span style="color:${x.delta >= 0 ? 'var(--green)' : 'var(--orange)'}">${x.delta >= 0 ? "+" : ""}${x.delta}</span><span style="color:rgba(247,247,245,.4)">${x.ts.replace("T", " ")}</span></div>`).join("")
+    : '<p style="font-size:13px;color:rgba(247,247,245,.5)">暂无记录</p>';
+  $("billing-modal").classList.add("show");
+}
+function closeModals() { document.querySelectorAll(".modal-bg").forEach(m => m.classList.remove("show")); }
+document.querySelectorAll(".modal-bg").forEach(m => m.onclick = e => { if (e.target === m) closeModals(); });
+</script>
+</body>
+</html>
