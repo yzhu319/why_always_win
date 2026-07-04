@@ -44,16 +44,26 @@ uvicorn app.main:app --port 8000
 2. Environment Variables 添加 `GEMINI_API_KEY`
 3. Deploy（后续 push 到 `main` 自动重新部署）
 
-注意：Vercel serverless 文件系统只读，SQLite 存 `/tmp`，**赢币数据是临时的**（冷启动即重置）。alpha 内测可接受，正式版需迁移 Vercel KV / Postgres。
+### 赢币持久化（Phase-2）
+
+未配置 `DATABASE_URL` 时，Vercel 上 SQLite 存 `/tmp`，**赢币数据是临时的**（冷启动即重置）。
+配置 `DATABASE_URL`（Postgres）后即持久、跨实例一致，扣费为原子操作不透支。详见 `docs/PHASE2_PRD.md`。
+
+开启步骤：
+1. Vercel 项目 → Storage → Create → **Postgres（Neon）**，或自建 Neon/Supabase 免费实例。
+2. 把 pooled 连接串加为 Production + Preview 的 `DATABASE_URL` 环境变量。
+3. `requirements.txt` 已含 `psycopg[binary]`，重新 `vercel deploy --prod` 即生效（`init_db()` 首次请求自动建表）。
 
 ## 配置项（环境变量）
 
 | 变量 | 默认 | 说明 |
 |---|---|---|
 | `GEMINI_API_KEY` | — | Gemini API key，必填 |
-| `YD_MODEL` | `gemini-2.5-flash` | 生成与合规校验所用模型 |
+| `YD_MODEL` | `gemini-3.5-flash` | 主生成模型 |
+| `YD_COMPLIANCE_MODEL` | `gemini-2.5-flash-lite` | 合规审核模型（更便宜快速） |
 | `YD_LLM_COMPLIANCE` | `1` | 大模型二次合规校验开关（`0` 关闭，仅本地敏感词） |
-| `YD_DB` | 见说明 | SQLite 路径；Vercel 上自动用 `/tmp/yd_app.db` |
+| `DATABASE_URL` | — | Postgres 连接串；设置即启用持久化存储（否则用 SQLite） |
+| `YD_DB` | 见说明 | 本地 SQLite 路径；未接 PG 时 Vercel 上用 `/tmp/yd_app.db` |
 | `YD_PORT` | `8000` | 服务端口（仅本地） |
 
 ## 目录结构
@@ -63,7 +73,7 @@ app/
   main.py          # FastAPI 入口：生成(SSE流式)、赢币、账单、热点接口
   prompts.py       # 品牌人设 + 四大选项卡提示词 + 风格/平台/强度规范
   compliance.py    # 双层合规审核
-  db.py            # 赢币/会员/账单（SQLite）
+  db.py            # 赢币/会员/账单（SQLite 本地 / Postgres 生产，原子扣费）
   trending.py      # 海外热点抓取（Reddit 公开 JSON，10 分钟缓存）
   data/
     knowledge.json       # 内置权威引证库
