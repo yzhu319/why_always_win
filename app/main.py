@@ -7,20 +7,20 @@ import json
 import os
 from pathlib import Path
 
-import anthropic
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from google import genai
+from google.genai import types as gtypes
 from pydantic import BaseModel
 
 from . import compliance, db, prompts, trending
 
-MODEL = os.environ.get("YD_MODEL", "claude-opus-4-8")
+MODEL = os.environ.get("YD_MODEL", "gemini-2.5-flash")
 STATIC_DIR = Path(__file__).parent.parent / "static"
 COOKIE = "yd_uid"
 
 app = FastAPI(title="赢典AI", version="0.1.0")
-client = anthropic.AsyncAnthropic()
-sync_client = anthropic.Anthropic()
+client = genai.Client()  # 读取 GEMINI_API_KEY 环境变量
 
 db.init_db()
 
@@ -119,21 +119,27 @@ async def generate(request: Request, body: GenerateReq):
     charged = not db.is_member(user)
 
     system = prompts.build_system(body.mode, body.style, body.platform, body.intensity)
-    messages = [m for m in body.messages if m.get("role") in ("user", "assistant")]
+    contents = [
+        {"role": "model" if m["role"] == "assistant" else "user",
+         "parts": [{"text": str(m.get("content", ""))}]}
+        for m in body.messages if m.get("role") in ("user", "assistant")
+    ]
 
     async def stream():
         full_text = []
         try:
-            async with client.messages.stream(
+            gen = await client.aio.models.generate_content_stream(
                 model=MODEL,
-                max_tokens=8000,
-                system=[{"type": "text", "text": system,
-                         "cache_control": {"type": "ephemeral"}}],
-                messages=messages,
-            ) as s:
-                async for text in s.text_stream:
-                    full_text.append(text)
-                    yield _sse({"type": "delta", "text": text})
+                contents=contents,
+                config=gtypes.GenerateContentConfig(
+                    system_instruction=system,
+                    max_output_tokens=8000,
+                ),
+            )
+            async for chunk in gen:
+                if chunk.text:
+                    full_text.append(chunk.text)
+                    yield _sse({"type": "delta", "text": chunk.text})
         except Exception as e:
             if charged:
                 db.refund(user["id"])
@@ -144,7 +150,7 @@ async def generate(request: Request, body: GenerateReq):
 
         # 输出侧双层合规审核
         out_hits = compliance.local_check(output)
-        review = compliance.llm_check(sync_client, MODEL, output)
+        review = compliance.llm_check(client, MODEL, output)
         if out_hits:
             review["level"] = "block"
             review["issues"] = review.get("issues", []) + [f"命中敏感词：{'、'.join(out_hits)}"]

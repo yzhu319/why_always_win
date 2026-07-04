@@ -1,11 +1,19 @@
 """赢币 + 账单：SQLite 最简实现（V1.0 alpha，匿名 cookie 用户）。"""
 
+import os
 import sqlite3
 import uuid
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent.parent / "data" / "app.db"
+# Vercel 等 serverless 环境文件系统只读，仅 /tmp 可写（数据为临时的，alpha 可接受；
+# 二期迁移 Vercel KV/Postgres）。本地默认存 data/app.db。
+if os.environ.get("YD_DB"):
+    DB_PATH = Path(os.environ["YD_DB"])
+elif os.environ.get("VERCEL"):
+    DB_PATH = Path("/tmp/yd_app.db")
+else:
+    DB_PATH = Path(__file__).parent.parent / "data" / "app.db"
 
 NEW_USER_COINS = 10   # 新用户赠送
 DAILY_COINS = 3       # 每日登录赠送

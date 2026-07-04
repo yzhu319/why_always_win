@@ -23,27 +23,38 @@
 
 V1.0 明确舍弃（PRD §10.6）：表情包商城、勋章等级、浏览器插件、大V模板库、404 彩蛋等，均未实现。
 
-## 快速启动
+## 快速启动（本地）
 
 ```bash
 cd why_always_win
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-export ANTHROPIC_API_KEY=sk-ant-xxxx   # 必填
+export GEMINI_API_KEY=AIzaSyxxxx   # 必填
 uvicorn app.main:app --port 8000
 ```
 
 浏览器打开 http://localhost:8000
 
+## Vercel 部署
+
+仓库已含 `vercel.json` + `api/index.py`，在 Vercel 导入本 GitHub 仓库即可：
+
+1. vercel.com/new → Import `yzhu319/why_always_win`
+2. Environment Variables 添加 `GEMINI_API_KEY`
+3. Deploy（后续 push 到 `main` 自动重新部署）
+
+注意：Vercel serverless 文件系统只读，SQLite 存 `/tmp`，**赢币数据是临时的**（冷启动即重置）。alpha 内测可接受，正式版需迁移 Vercel KV / Postgres。
+
 ## 配置项（环境变量）
 
 | 变量 | 默认 | 说明 |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | — | Claude API key，必填 |
-| `YD_MODEL` | `claude-opus-4-8` | 生成与合规校验所用模型 |
+| `GEMINI_API_KEY` | — | Gemini API key，必填 |
+| `YD_MODEL` | `gemini-2.5-flash` | 生成与合规校验所用模型 |
 | `YD_LLM_COMPLIANCE` | `1` | 大模型二次合规校验开关（`0` 关闭，仅本地敏感词） |
-| `YD_PORT` | `8000` | 服务端口 |
+| `YD_DB` | 见说明 | SQLite 路径；Vercel 上自动用 `/tmp/yd_app.db` |
+| `YD_PORT` | `8000` | 服务端口（仅本地） |
 
 ## 目录结构
 

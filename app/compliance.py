@@ -28,17 +28,21 @@ def local_check(text: str) -> list[str]:
 
 
 def llm_check(client, model: str, text: str) -> dict:
-    """第二层：大模型语义校验。返回 {level, issues, suggestion}。"""
+    """第二层：大模型语义校验（Gemini JSON 模式）。返回 {level, issues, suggestion}。"""
     if os.environ.get("YD_LLM_COMPLIANCE", "1") != "1":
         return {"level": "pass", "issues": [], "suggestion": "", "skipped": True}
     try:
-        resp = client.messages.create(
+        from google.genai import types as gtypes
+        resp = client.models.generate_content(
             model=model,
-            max_tokens=500,
-            system=COMPLIANCE_SYSTEM,
-            messages=[{"role": "user", "content": f"待审核文本：\n{text[:6000]}"}],
+            contents=f"待审核文本：\n{text[:6000]}",
+            config=gtypes.GenerateContentConfig(
+                system_instruction=COMPLIANCE_SYSTEM,
+                response_mime_type="application/json",
+                max_output_tokens=2000,
+            ),
         )
-        raw = next((b.text for b in resp.content if b.type == "text"), "{}")
+        raw = resp.text or "{}"
         m = re.search(r"\{.*\}", raw, re.S)
         result = json.loads(m.group(0)) if m else {}
         if result.get("level") not in ("pass", "caution", "block"):
