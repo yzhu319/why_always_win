@@ -80,7 +80,27 @@ async def billing(request: Request):
 @app.get("/api/trending")
 async def api_trending():
     items = await trending.get_trending()
-    return JSONResponse({"items": items})
+    return JSONResponse({"items": items, "seeds": trending.seed_topics()})
+
+
+@app.get("/api/suggest")
+async def api_suggest(q: str = ""):
+    """输入联想：模板补全 + 热点话题匹配（点击优先交互）。"""
+    q = q.strip()
+    hot = await trending.get_trending()
+    titles = [it["title"] for it in hot] + trending.SEED_TOPICS
+    if not q:
+        picks = titles[:6]
+        return JSONResponse({"suggestions": [f"{t} 的赢面如何？" for t in picks]})
+    templates = [
+        f"「{q}」的赢面分析",
+        f"就「{q}」写一条爆款微博",
+        f"用犀利风格辣评「{q}」",
+        f"「{q}」的海内外视角对比",
+        f"「{q}」反方最强论点是什么？逐条反驳",
+    ]
+    matches = [f"{t} 的赢面如何？" for t in titles if q.lower() in t.lower()][:3]
+    return JSONResponse({"suggestions": (matches + templates)[:8]})
 
 
 class GenerateReq(BaseModel):
