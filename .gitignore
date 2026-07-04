@@ -6,3 +6,5 @@ venv/
 data/app.db
 *.db
 .DS_Store
+.vercel
+.env*
