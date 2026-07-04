@@ -5,6 +5,7 @@
 
 import json
 import os
+import re
 from pathlib import Path
 
 from fastapi import FastAPI, Request, Response
@@ -107,6 +108,39 @@ async def api_suggest(q: str = ""):
     ]
     matches = [f"{t} 的赢面如何？" for t in titles if q.lower() in t.lower()][:3]
     return JSONResponse({"suggestions": (matches + templates)[:8]})
+
+
+class PartiesReq(BaseModel):
+    topic: str = ""
+
+
+@app.post("/api/parties")
+async def api_parties(body: PartiesReq):
+    """识别话题的可站队立场方 + 推荐默认方（民意/中方倾向）。免赢币、走快模型。"""
+    topic = (body.topic or "").strip()
+    if len(topic) < 2:
+        return JSONResponse({"parties": [], "recommend": ""})
+    try:
+        resp = await client.aio.models.generate_content(
+            model=COMPLIANCE_MODEL,
+            contents=f"热点/话题：{topic[:500]}",
+            config=gtypes.GenerateContentConfig(
+                system_instruction=prompts.PARTIES_SYSTEM,
+                response_mime_type="application/json",
+                max_output_tokens=400,
+                temperature=0.4,
+            ),
+        )
+        raw = (resp.text or "{}").strip()
+        m = re.search(r"\{.*\}", raw, re.S)
+        data = json.loads(m.group(0)) if m else {}
+        parties = [str(p).strip() for p in data.get("parties", []) if str(p).strip()][:4]
+        recommend = str(data.get("recommend", "")).strip()
+        if recommend not in parties:
+            recommend = parties[0] if parties else ""
+        return JSONResponse({"parties": parties, "recommend": recommend})
+    except Exception as e:
+        return JSONResponse({"parties": [], "recommend": "", "error": type(e).__name__})
 
 
 class GenerateReq(BaseModel):
