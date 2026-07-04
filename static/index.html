@@ -38,9 +38,23 @@
   }
   .slogan { font-size: 12px; color: rgba(247,247,245,.55); margin-left: 8px; font-weight: 400; }
   .wallet { display: flex; align-items: center; gap: 12px; font-size: 14px; }
+  .coin-wrap { position: relative; display: inline-block; }
   .coin-chip {
     background: rgba(212,160,23,.15); border: 1px solid var(--gold);
     color: var(--gold-light); border-radius: 20px; padding: 4px 14px; cursor: pointer;
+    transition: transform .15s, background .15s;
+  }
+  .coin-chip.bump { transform: scale(1.18); background: rgba(212,160,23,.35); }
+  .coin-fly {
+    position: absolute; left: 50%; top: 0; transform: translateX(-50%);
+    color: var(--orange); font-weight: 700; font-size: 14px; opacity: 0;
+    pointer-events: none; white-space: nowrap;
+  }
+  .coin-fly.go { animation: coinfly 1.1s ease-out forwards; }
+  @keyframes coinfly {
+    0% { opacity: 0; transform: translate(-50%, 6px); }
+    25% { opacity: 1; transform: translate(-50%, -4px); }
+    100% { opacity: 0; transform: translate(-50%, -26px); }
   }
   .btn-link { background: none; border: none; color: rgba(247,247,245,.7); cursor: pointer; font-size: 13px; text-decoration: underline; }
 
@@ -53,12 +67,58 @@
   }
   .tab.active { background: var(--gold); color: var(--deep-blue); border-color: var(--gold); font-weight: 700; }
 
-  .options { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
-  .options select {
-    background: var(--deep-blue-2); color: var(--white);
-    border: 1px solid rgba(212,160,23,.4); border-radius: 8px; padding: 6px 10px; font-size: 13px;
+  /* 一键切换的风格/平台/强度 pill + 立场选择 */
+  .controls { margin-bottom: 12px; }
+  .ctrl-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+  .ctrl-label {
+    font-size: 13px; color: var(--gold-light); font-weight: 700;
+    min-width: 42px; flex-shrink: 0;
   }
-  .options label { font-size: 13px; color: rgba(247,247,245,.6); align-self: center; }
+  .pillbar { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill {
+    padding: 6px 14px; border-radius: 18px; cursor: pointer; font-size: 13px;
+    border: 1px solid rgba(247,247,245,.22); color: rgba(247,247,245,.8);
+    background: none; transition: all .12s;
+  }
+  .pill:hover { border-color: rgba(212,160,23,.6); color: var(--gold-light); }
+  .pill.active {
+    background: var(--gold); color: var(--deep-blue); border-color: var(--gold); font-weight: 700;
+  }
+  .stance-input {
+    flex: 1; min-width: 200px; background: var(--deep-blue);
+    color: var(--white); border: 1px solid rgba(212,160,23,.4);
+    border-radius: 8px; padding: 7px 12px; font-size: 13px; outline: none;
+  }
+  .stance-input:focus { border-color: var(--gold); }
+  .ctrl-hint { font-size: 11px; color: rgba(247,247,245,.4); flex-shrink: 0; }
+
+  /* 对话工具条：延续 vs 新对话，消除"追问还是新话题"的困惑 */
+  #chat-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    background: rgba(212,160,23,.08); border: 1px solid rgba(212,160,23,.25);
+    border-radius: 10px; padding: 8px 14px; margin-bottom: 12px; font-size: 13px;
+  }
+  #chat-bar .cb-hint { color: rgba(247,247,245,.7); }
+  #chat-bar .cb-hint b { color: var(--gold-light); }
+  #chat-bar button {
+    flex-shrink: 0; background: none; border: 1px solid var(--gold);
+    color: var(--gold-light); border-radius: 8px; padding: 5px 14px;
+    font-size: 13px; cursor: pointer; font-weight: 700;
+  }
+  #chat-bar button:hover { background: var(--gold); color: var(--deep-blue); }
+
+  /* 换风格再来一版 */
+  .regen-bar {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-top: 12px; padding-top: 10px; border-top: 1px dashed rgba(247,247,245,.15);
+  }
+  .regen-bar .rb-label { font-size: 12px; color: rgba(247,247,245,.55); }
+  .regen-bar button {
+    background: rgba(212,160,23,.1); border: 1px solid rgba(212,160,23,.35);
+    color: var(--gold-light); border-radius: 14px; padding: 4px 12px;
+    font-size: 12px; cursor: pointer;
+  }
+  .regen-bar button:hover { background: var(--gold); color: var(--deep-blue); font-weight: 700; }
 
   /* 今日赢点（blank state 话题卡） */
   .seed-head { display: flex; justify-content: space-between; align-items: center; margin: 6px 0 10px; }
@@ -185,9 +245,11 @@
   textarea:focus { border-color: var(--gold); }
   #send {
     background: var(--gold); color: var(--deep-blue); font-weight: 700;
-    border: none; border-radius: 10px; padding: 12px 22px; font-size: 15px; cursor: pointer;
+    border: none; border-radius: 10px; padding: 10px 22px; font-size: 15px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; line-height: 1.2;
   }
   #send:disabled { opacity: .5; cursor: not-allowed; }
+  .send-cost { font-size: 10px; font-weight: 400; opacity: .75; margin-top: 1px; }
   .disclaimer { font-size: 11px; color: rgba(247,247,245,.35); text-align: center; margin-top: 6px; }
 
   /* 金色盖章特效 */
@@ -229,7 +291,10 @@
     <span class="slogan">同一事实，多维赢解 · 全球视野，立于不败</span>
   </div>
   <div class="wallet">
-    <span class="coin-chip" id="coins" onclick="openRecharge()">赢币 --</span>
+    <span class="coin-wrap">
+      <span class="coin-chip" id="coins" onclick="openRecharge()">赢币 --</span>
+      <span class="coin-fly" id="coin-fly"></span>
+    </span>
     <button class="btn-link" onclick="openBilling()">账单</button>
   </div>
 </header>
@@ -243,37 +308,29 @@
     <button class="tab" data-mode="trending">🌏 实时时事赢面</button>
   </div>
 
-  <div class="options" id="opt-copywriting" style="display:none">
-    <label>风格</label>
-    <select id="style">
-      <option value="official">官方严谨</option>
-      <option value="rational" selected>理性客观</option>
-      <option value="sharp">犀利锐评</option>
-      <option value="witty">抖机灵</option>
-    </select>
-    <label>平台</label>
-    <select id="platform">
-      <option value="general" selected>通用</option>
-      <option value="weibo">微博</option>
-      <option value="xiaohongshu">小红书</option>
-      <option value="zhihu">知乎</option>
-      <option value="douyin">抖音</option>
-    </select>
-  </div>
-
-  <div class="options" id="opt-comment" style="display:none">
-    <label>强度</label>
-    <select id="intensity">
-      <option value="calm">理性克制</option>
-      <option value="objective" selected>犀利客观</option>
-      <option value="humorous">幽默抖机灵</option>
-      <option value="firm">立场鲜明</option>
-    </select>
+  <div class="controls" id="controls">
+    <div class="ctrl-row" id="row-style" style="display:none">
+      <span class="ctrl-label">风格</span>
+      <div class="pillbar" id="style-pills"></div>
+    </div>
+    <div class="ctrl-row" id="row-platform" style="display:none">
+      <span class="ctrl-label">平台</span>
+      <div class="pillbar" id="platform-pills"></div>
+    </div>
+    <div class="ctrl-row" id="row-intensity" style="display:none">
+      <span class="ctrl-label">强度</span>
+      <div class="pillbar" id="intensity-pills"></div>
+    </div>
+    <div class="ctrl-row" id="row-stance" style="display:none">
+      <span class="ctrl-label">帮谁赢</span>
+      <input id="stance-input" class="stance-input" placeholder="选填 · 你想让哪一方赢？如：苹果 / 国产厂商 / 消费者">
+      <span class="ctrl-hint">留空＝典典自动判定最容易赢的一方</span>
+    </div>
   </div>
 
   <div id="trend-panel" style="display:none">
     <p style="font-size:13px;color:rgba(247,247,245,.5);margin-bottom:10px">
-      🌏 海外实时热点（Twitter/Reddit/YouTube 信源 · V1.0 内测版接入 Reddit 公开源）· 领先信息差 24-72 小时
+      🌏 海内外实时热点 · 科技 / 财经 / 科学 / 文娱 / 体育 / 健康板块 · 已过滤政治敏感内容 · 领先信息差 24-72 小时
     </p>
     <div id="trend-list"><div class="loading"><span class="dian">🧐</span>抓取海外信源中…</div></div>
   </div>
@@ -288,6 +345,10 @@
     <div class="chips" id="ask-chips"></div>
   </div>
 
+  <div id="chat-bar" style="display:none">
+    <span class="cb-hint">💬 在下方继续输入会<b>延续本话题</b>追问；换个话题请点</span>
+    <button onclick="newConversation()">＋ 新对话</button>
+  </div>
   <div id="chat"></div>
 </main>
 
@@ -297,9 +358,12 @@
       <div class="suggest-box" id="suggest-box"></div>
       <span class="win-cursor" id="wc">赢</span>
       <textarea id="input" placeholder="输入热点、观点、素材……典典为你多维研判"></textarea>
-      <button id="send">研判</button>
+      <button id="send">研判<span class="send-cost" id="send-cost">1 赢币</span></button>
     </div>
-    <div class="disclaimer">⚖️ 本工具仅提供文案研判辅助，生成内容的发布与使用由用户自行负责 · alpha 内测版</div>
+    <div class="disclaimer">
+      <span id="cost-note">每次研判消耗 <b>1 赢币</b>，生成失败自动退回 · 会员不计费</span>
+      <br>⚖️ 本工具仅提供文案研判辅助，生成内容的发布与使用由用户自行负责 · alpha 内测版
+    </div>
   </div>
 </div>
 
@@ -329,10 +393,56 @@ const LOADING_TEXTS = ["抓取海内外信源", "匹配权威史实", "测算多
 
 let mode = "chat";
 let histories = { chat: [], copywriting: [], comment: [], analysis: [], trending: [] };
+let lastUserText = { chat: "", copywriting: "", comment: "", analysis: "", trending: "" };
 let generating = false;
+
+// 一键切换的选项状态（替代原下拉框）
+const sel = { style: "sharp", platform: "general", intensity: "objective", stance: "" };
+
+const STYLE_OPTS = [
+  ["sharp", "犀利锐评"], ["rational", "理性客观"], ["emotional", "走心共情"],
+  ["witty", "轻松幽默"], ["hardcore", "数据硬核"], ["official", "官方严谨"],
+];
+const PLATFORM_OPTS = [
+  ["general", "通用"], ["weibo", "微博"], ["xiaohongshu", "小红书"],
+  ["zhihu", "知乎"], ["douyin", "抖音"],
+];
+const INTENSITY_OPTS = [
+  ["objective", "犀利客观"], ["firm", "立场鲜明"],
+  ["humorous", "幽默抖机灵"], ["calm", "理性克制"],
+];
 
 const $ = id => document.getElementById(id);
 const chatEl = $("chat"), inputEl = $("input"), sendEl = $("send"), wc = $("wc");
+
+// ---------- 选项 pill 构建 ----------
+function buildPills(containerId, opts, key) {
+  const box = $(containerId);
+  box.innerHTML = "";
+  for (const [val, label] of opts) {
+    const b = document.createElement("button");
+    b.className = "pill" + (sel[key] === val ? " active" : "");
+    b.textContent = label;
+    b.onclick = () => {
+      sel[key] = val;
+      box.querySelectorAll(".pill").forEach(p => p.classList.remove("active"));
+      b.classList.add("active");
+    };
+    box.appendChild(b);
+  }
+}
+buildPills("style-pills", STYLE_OPTS, "style");
+buildPills("platform-pills", PLATFORM_OPTS, "platform");
+buildPills("intensity-pills", INTENSITY_OPTS, "intensity");
+$("stance-input").addEventListener("input", e => { sel.stance = e.target.value.trim(); });
+
+const STANCE_MODES = ["copywriting", "comment", "analysis", "trending"];
+function updateControls() {
+  $("row-style").style.display = mode === "copywriting" ? "flex" : "none";
+  $("row-platform").style.display = mode === "copywriting" ? "flex" : "none";
+  $("row-intensity").style.display = mode === "comment" ? "flex" : "none";
+  $("row-stance").style.display = STANCE_MODES.includes(mode) ? "flex" : "none";
+}
 
 // ---------- 用户 / 赢币 ----------
 async function refreshMe() {
@@ -349,8 +459,7 @@ document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
   document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
   t.classList.add("active");
   mode = t.dataset.mode;
-  $("opt-copywriting").style.display = mode === "copywriting" ? "flex" : "none";
-  $("opt-comment").style.display = mode === "comment" ? "flex" : "none";
+  updateControls();
   $("trend-panel").style.display = mode === "trending" ? "block" : "none";
   if (mode === "trending") loadTrending();
   renderHistory();
@@ -516,6 +625,7 @@ async function generate(presetText) {
   inputEl.value = "";
   generating = true; sendEl.disabled = true; wc.classList.add("fast");
 
+  lastUserText[mode] = text;
   histories[mode].push({ role: "user", content: text });
   appendMsg("user", text);
   suggestBox.classList.remove("show");
@@ -537,9 +647,10 @@ async function generate(presetText) {
   const payload = {
     mode,
     messages: histories[mode].map(m => ({ role: m.role, content: m.content })),
-    style: $("style").value,
-    platform: $("platform").value,
-    intensity: $("intensity").value,
+    style: sel.style,
+    platform: sel.platform,
+    intensity: sel.intensity,
+    stance: sel.stance,
   };
 
   let botDiv = null, full = "", compliance = null;
@@ -581,6 +692,7 @@ async function generate(presetText) {
         } else if (ev.type === "done") {
           compliance = ev.compliance;
           if (ev.user) renderUser(ev.user);
+          if (ev.charged && ev.cost > 0) flashCoin(ev.cost);
         } else if (ev.type === "error") {
           clearInterval(loadTimer); load.remove();
           if (!botDiv) botDiv = appendMsg("bot", "");
@@ -600,8 +712,57 @@ async function generate(presetText) {
   if (botDiv && full) {
     renderBot(botDiv, full, compliance);
     histories[mode].push({ role: "assistant", content: full, compliance });
+    appendRegenBar(botDiv);   // 换风格/换强度再来一版（平行版本）
     stamp(); // 金色盖章特效
   }
+}
+
+// ---------- 平行版本：换风格/换强度对同一话题再生成一版 ----------
+function appendRegenBar(botDiv) {
+  const topic = lastUserText[mode];
+  if (!topic) return;
+  let opts, key, label;
+  if (mode === "copywriting") { opts = STYLE_OPTS; key = "style"; label = "换个风格再来一版："; }
+  else if (mode === "comment") { opts = INTENSITY_OPTS; key = "intensity"; label = "换个强度再来一版："; }
+  else return;
+
+  const bar = document.createElement("div");
+  bar.className = "regen-bar";
+  const lb = document.createElement("span");
+  lb.className = "rb-label";
+  lb.textContent = "🎭 " + label;
+  bar.appendChild(lb);
+  for (const [val, name] of opts) {
+    if (val === sel[key]) continue;   // 当前版本不重复给
+    const b = document.createElement("button");
+    b.textContent = name;
+    b.onclick = () => {
+      sel[key] = val;
+      buildPills(key === "style" ? "style-pills" : "intensity-pills",
+                 opts, key);
+      generate(topic);   // 同一话题、新风格 → 生成平行版本
+    };
+    bar.appendChild(b);
+  }
+  botDiv.appendChild(bar);
+}
+
+// ---------- 赢币扣费可视反馈 ----------
+function flashCoin(cost) {
+  const fly = $("coin-fly"), chip = $("coins");
+  fly.textContent = "−" + cost + " 赢币";
+  fly.classList.remove("go"); void fly.offsetWidth; fly.classList.add("go");
+  chip.classList.add("bump");
+  setTimeout(() => chip.classList.remove("bump"), 220);
+}
+
+// ---------- 新对话：清空当前模式上下文，开一段新研判 ----------
+function newConversation() {
+  histories[mode] = [];
+  lastUserText[mode] = "";
+  renderHistory();
+  updateSeedPanel();
+  inputEl.focus();
 }
 
 function stamp() {
@@ -686,7 +847,9 @@ function doTopic(it, act) {
 }
 
 function updateSeedPanel() {
-  $("seed-panel").style.display = histories[mode].length ? "none" : "block";
+  const hasHistory = histories[mode].length > 0;
+  $("seed-panel").style.display = hasHistory ? "none" : "block";
+  $("chat-bar").style.display = hasHistory ? "flex" : "none";
 }
 
 async function loadTrending() {
@@ -739,6 +902,7 @@ document.addEventListener("click", e => {
 });
 
 loadTopics();
+updateControls();
 updateSeedPanel();
 
 // ---------- 充值 / 账单 ----------

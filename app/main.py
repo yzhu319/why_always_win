@@ -15,9 +15,15 @@ from pydantic import BaseModel
 
 from . import compliance, db, prompts, trending
 
-MODEL = os.environ.get("YD_MODEL", "gemini-2.5-flash")
+MODEL = os.environ.get("YD_MODEL", "gemini-3.5-flash")
+# 合规审核走更便宜快速的小模型，主生成走强模型，兼顾质量与成本。
+COMPLIANCE_MODEL = os.environ.get("YD_COMPLIANCE_MODEL", "gemini-2.5-flash-lite")
 STATIC_DIR = Path(__file__).parent.parent / "static"
 COOKIE = "yd_uid"
+
+# 内容型模式给高温度，出更"辣"、更有网感的内容；分析型偏稳。
+_TEMPERATURE = {"comment": 1.15, "copywriting": 1.05, "trending": 1.0,
+                "analysis": 0.7, "chat": 0.9}
 
 app = FastAPI(title="赢典AI", version="0.1.0")
 client = genai.Client()  # 读取 GEMINI_API_KEY 环境变量
@@ -106,9 +112,10 @@ async def api_suggest(q: str = ""):
 class GenerateReq(BaseModel):
     mode: str = "chat"                 # chat | copywriting | comment | analysis | trending
     messages: list[dict] = []          # [{role, content}] 历史（含本次用户输入）
-    style: str = "rational"
+    style: str = "sharp"
     platform: str = "general"
     intensity: str = "objective"
+    stance: str = ""                   # 帮谁赢：用户一键指定的立场（选填）
 
 
 def _sse(payload: dict) -> str:
@@ -138,7 +145,8 @@ async def generate(request: Request, body: GenerateReq):
             status_code=402)
     charged = not db.is_member(user)
 
-    system = prompts.build_system(body.mode, body.style, body.platform, body.intensity)
+    system = prompts.build_system(
+        body.mode, body.style, body.platform, body.intensity, body.stance)
     contents = [
         {"role": "model" if m["role"] == "assistant" else "user",
          "parts": [{"text": str(m.get("content", ""))}]}
@@ -154,6 +162,7 @@ async def generate(request: Request, body: GenerateReq):
                 config=gtypes.GenerateContentConfig(
                     system_instruction=system,
                     max_output_tokens=8000,
+                    temperature=_TEMPERATURE.get(body.mode, 0.9),
                 ),
             )
             async for chunk in gen:
@@ -170,13 +179,15 @@ async def generate(request: Request, body: GenerateReq):
 
         # 输出侧双层合规审核
         out_hits = compliance.local_check(output)
-        review = compliance.llm_check(client, MODEL, output)
+        review = compliance.llm_check(client, COMPLIANCE_MODEL, output)
         if out_hits:
             review["level"] = "block"
             review["issues"] = review.get("issues", []) + [f"命中敏感词：{'、'.join(out_hits)}"]
 
         latest = db.get_or_create_user(user["id"])
-        yield _sse({"type": "done", "compliance": review, "user": _user_payload(latest)})
+        yield _sse({"type": "done", "compliance": review,
+                    "user": _user_payload(latest),
+                    "charged": charged, "cost": db.COST_PER_GEN if charged else 0})
 
     resp = StreamingResponse(stream(), media_type="text/event-stream")
     resp.headers["Cache-Control"] = "no-cache"
